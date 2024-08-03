@@ -4,9 +4,6 @@ int distances[MAZE_SIZE][MAZE_SIZE];   // 2D array to store distances
 
 int currentX = 0;
 int currentY = 0;
-int targetCells[4][2] = {
-    {7, 7}, {7, 8}, {8, 7}, {8, 8}
-  };
 
 struct Cell {
   int x, y;
@@ -115,18 +112,28 @@ void floodFill() {
     }
   }
 
+  if (MAZE_SIZE % 2 == 0) {
+    // Add all four central target cells to the queue
+    int n = MAZE_SIZE/2;
+    int targetCells[4][2] = {
+      {n-1, n-1}, {n-1, n}, {n, n-1}, {n, n}
+    };
 
-  // Add all four central target cells to the queue
-  int targetCells[4][2] = {
-    {7, 7}, {7, 8}, {8, 7}, {8, 8}
-  };
-
-  for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 4; i++) {
     int tx = targetCells[i][0];
     int ty = targetCells[i][1];
     distances[tx][ty] = 0;  // Distance to target cells is 0
     queue.enqueue({tx, ty});
+    }
   }
+  else{
+    int n = MAZE_SIZE/2;
+    distances[n][n] = 0;
+    queue.enqueue({n, n});
+  }
+  
+
+  
   
   
   while (!queue.isEmpty()) {
