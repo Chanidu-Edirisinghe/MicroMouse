@@ -1,3 +1,20 @@
+const int frontSensorPin = A0;
+const int leftSensorPin = A1;
+const int rightSensorPin = A2;
+
+const int leftMotorPin = 9; 
+const int rightMotorPin = 10;
+
+float Kp = 0;
+float Kd = 0;
+
+float previousErrorLeft = 0;
+float previousErrorRight = 0;
+float setPoint = 4.6;
+
+unsigned long previousTime = 0;
+unsigned long currentTime;
+
 const int MAZE_SIZE = 16;
 int maze[MAZE_SIZE][MAZE_SIZE] = {0};  // 2D array to represent walls
 int distances[MAZE_SIZE][MAZE_SIZE];   // 2D array to store distances
@@ -74,34 +91,6 @@ public:
   }
 };
 
-
-void setup() {
-  Serial.begin(9600);
-
-  floodFill();
-  for (int row = 0; row < MAZE_SIZE; row++) {
-    for (int col = 0; col < MAZE_SIZE; col++) {
-      Serial.print(distances[row][col]);
-      if(distances[row][col] > 9){
-        Serial.print(" "); 
-      }
-      else{
-        Serial.print("  ");
-      }
-      
-    }
-    Serial.println(); // Move to the next line after printing all columns in the row
-  }
-}
-
-void loop() {
-  
-  
-  
-
-}
-
-
 void floodFill() {
   Queue queue;
 
@@ -132,9 +121,6 @@ void floodFill() {
     queue.enqueue({n, n});
   }
   
-
-  
-  
   
   while (!queue.isEmpty()) {
     Cell current = queue.dequeue();
@@ -158,3 +144,77 @@ void floodFill() {
     }
   }
 }
+
+void PID(){
+  // convert the values to distances
+  int frontDistance = analogRead(frontSensorPin);
+  int leftDistance = analogRead(leftSensorPin);
+  int rightDistance = analogRead(rightSensorPin);
+
+  currentTime = millis();
+  float elapsedTime = (currentTime - previousTime) / 1000.0;
+  
+  float errorLeft = setPoint - leftDistance;
+  float errorRight = setPoint - rightDistance;
+
+  float PoutLeft = Kp * errorLeft;
+  float PoutRight = Kp * errorRight;
+
+  float derivativeLeft = (errorLeft - previousErrorLeft) / elapsedTime;
+  float derivativeRight = (errorRight - previousErrorRight) / elapsedTime;
+  float DoutLeft = Kd * derivativeLeft;
+  float DoutRight = Kd * derivativeRight;
+
+  float PIDoutLeft = PoutLeft + DoutLeft;
+  float PIDoutRight = PoutRight + DoutRight;
+
+  int baseSpeed = 100;  
+  int leftMotorSpeed = baseSpeed + PIDoutLeft;
+  int rightMotorSpeed = baseSpeed + PIDoutRight;
+
+  leftMotorSpeed = constrain(leftMotorSpeed, 0, 255);
+  rightMotorSpeed = constrain(rightMotorSpeed, 0, 255);
+
+  analogWrite(leftMotorPin, leftMotorSpeed);
+  analogWrite(rightMotorPin, rightMotorSpeed);
+
+  previousErrorLeft = errorLeft;
+  previousErrorRight = errorRight;
+  previousTime = currentTime;
+
+  if (frontDistance < setPoint) {  
+    analogWrite(leftMotorPin, 0);
+    analogWrite(rightMotorPin, 0);
+  }
+
+  delay(50);
+}
+
+
+void setup() {
+  Serial.begin(9600);
+
+  pinMode(leftMotorPin, OUTPUT);
+  pinMode(rightMotorPin, OUTPUT);
+
+  floodFill();
+  // for (int row = 0; row < MAZE_SIZE; row++) {
+  //   for (int col = 0; col < MAZE_SIZE; col++) {
+  //     Serial.print(distances[row][col]);
+  //     if(distances[row][col] > 9){
+  //       Serial.print(" "); 
+  //     }
+  //     else{
+  //       Serial.print("  ");
+  //     }
+      
+  //   }
+  //   Serial.println(); // Move to the next line after printing all columns in the row
+  // }
+}
+
+void loop() {
+  PID();
+  
+}
+
