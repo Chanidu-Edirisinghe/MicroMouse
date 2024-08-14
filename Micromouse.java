@@ -2,6 +2,8 @@ package src;
 import src.API;
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.PriorityQueue;
+import java.util.Comparator;
 class Cell {
     public int x, y;
 
@@ -11,6 +13,8 @@ class Cell {
     }
 }
 
+
+
 public class Micromouse {
 
     public static final int MAZE_SIZE = 16;
@@ -18,7 +22,7 @@ public class Micromouse {
     public static int[][] distances = new int[MAZE_SIZE][MAZE_SIZE];  // 2D array to store distances
     // Define target cells
     public static int[][] targetCells = {
-        {7, 7}, {7, 8}, {8, 7}, {8, 8}
+          {7, 7}, {7, 8}, {8, 7}, {8, 8}
     };
 
     private static void log(String text) {
@@ -42,22 +46,16 @@ public class Micromouse {
             }
         }
 
-        // for (int i = 0; i < MAZE_SIZE; i++) {
-        //     for (int j = 0; j < MAZE_SIZE; j++) {
-        //          API.setText(j, MAZE_SIZE-1-i, String.valueOf(distances[i][j]));
-        //     }
-        // }
-
-        Cell currentPosition = new Cell(15, 0);
-        int orientation = 4;
-
-        floodFill();
-        for (int i = 0; i < MAZE_SIZE; i++) {
-            for (int j = 0; j < MAZE_SIZE; j++) {
-                 API.setText(j, MAZE_SIZE-1-i, String.valueOf(distances[j][i]));
+        for(int k = 0; k < 4; k++){
+            floodFill();
+            for (int i = 0; i < MAZE_SIZE; i++) {
+                for (int j = 0; j < MAZE_SIZE; j++) {
+                    API.setText(j, MAZE_SIZE-1-i, String.valueOf(distances[i][j]));
+                }
             }
+            navigate(new Cell(15, 0), 4);
+            API.ackReset();
         }
-        navigate(currentPosition, orientation);
 
     }
 
@@ -65,10 +63,10 @@ public class Micromouse {
     private static void navigate(Cell currentPosition, int orientation) {
         // Define the direction vectors for forward, right, backward, left
         int[][] directions = {
-            {0, 1},   // Right (1)
-            {0, -1},  // Left (2)
-            {-1, 0},  // Forward (4)
-            {1, 0}    // Backward (8)
+                {0, 1},   // Right (1)
+                {0, -1},  // Left (2)
+                {-1, 0},  // Forward (4)
+                {1, 0}    // Backward (8)
         };
 
         while (true) {
@@ -117,10 +115,10 @@ public class Micromouse {
             floodFill();
             for (int i = 0; i < MAZE_SIZE; i++) {
                 for (int j = 0; j < MAZE_SIZE; j++) {
-                     API.setText(j, MAZE_SIZE-1-i, String.valueOf(distances[i][j]));
+                    API.setText(j, MAZE_SIZE-1-i, String.valueOf(distances[i][j]));
                 }
             }
-            
+
             for (int i = 0; i < MAZE_SIZE; i++) {
                 for (int j = 0; j < MAZE_SIZE; j++) {
                     Micromouse.log1(maze[i][j]);
@@ -128,7 +126,7 @@ public class Micromouse {
                 Micromouse.log("");
             }
             Micromouse.log("");
-            
+
 
             // Find the next position to move to based on the distances
             int minDistance = Integer.MAX_VALUE;
@@ -161,13 +159,14 @@ public class Micromouse {
             orientation = nextOrientation;
 
             // Check if the current position is a target cell
+            
             for (int[] targetCell : targetCells) {
                 if (currentPosition.x == targetCell[0] && currentPosition.y == targetCell[1]) {
-                    System.out.println("Robot has reached a target cell!");
+                    Micromouse.log("Robot has reached a target cell!");
                     return;
                 }
             }
-
+            
         }
     }
 
@@ -307,29 +306,31 @@ public class Micromouse {
         }
     }
 
-    // private static void floodFill(int[][] targetCells, Queue<Cell> queue){
-    //     // Clear the queue before starting
-    //     queue.clear();
+    // private static void floodFill2(){
 
-    //     // for (int i = 0; i < MAZE_SIZE; i++) {
-    //     //     for (int j = 0; j < MAZE_SIZE; j++) {
-    //     //         distances[i][j] = 255; // A large number representing infinity
-    //     //     }
-    //     // }
-    
-    //     // Add all four central target cells to the queue
-    //     for (int[] targetCell : targetCells) {
-    //         int tx = targetCell[0];
-    //         int ty = targetCell[1];
-    //         distances[tx][ty] = 0;  // Distance to target cells is 0
-    //         queue.add(new Cell(tx, ty));
+    //     // Initialize the queue
+    //     Queue<Cell> queue = new LinkedList<>();
+
+    //     for (int i = 0; i < MAZE_SIZE; i++) {
+    //         for (int j = 0; j < MAZE_SIZE; j++) {
+    //             distances[i][j] = 255; // A large number representing infinity
+    //         }
     //     }
-    
+
+    //     // Add all four central target cells to the queue
+        
+    //     int tx = 15;
+    //     int ty = 0;
+    //     distances[tx][ty] = 0;  // Distance to target cells is 0
+    //     queue.add(new Cell(tx, ty));
+        
+
+
     //     // Process the queue
     //     while (!queue.isEmpty()) {
     //         Cell current = queue.poll();
     //         int currentDist = distances[current.x][current.y];
-    
+
     //         // Up
     //         if (current.x > 0 && (maze[current.x][current.y] & (1 << 2)) == 0 && distances[current.x - 1][current.y] > currentDist + 1) {
     //             distances[current.x - 1][current.y] = currentDist + 1;
@@ -352,5 +353,115 @@ public class Micromouse {
     //         }
     //     }
     // }
-    
+
+
+
+    // private static int navigate2(Cell currentPosition, int orientation) {
+    //     // Define the direction vectors for forward, right, backward, left
+    //     int[][] directions = {
+    //             {0, 1},   // Right (1)
+    //             {0, -1},  // Left (2)
+    //             {-1, 0},  // Forward (4)
+    //             {1, 0}    // Backward (8)
+    //     };
+
+    //     while (true) {
+    //         // Check surroundings
+    //         boolean right = API.wallRight();
+    //         boolean left = API.wallLeft();
+    //         boolean front = API.wallFront();
+    //         boolean back = false;  // The robot cannot directly sense back
+
+    //         // Adjust walls according to the current orientation
+    //         boolean adjustedFront, adjustedRight, adjustedLeft, adjustedBack;
+
+    //         switch (orientation) {
+    //             case 4: // Facing forward
+    //                 adjustedFront = front;
+    //                 adjustedRight = right;
+    //                 adjustedLeft = left;
+    //                 adjustedBack = back;
+    //                 break;
+    //             case 1: // Facing right
+    //                 adjustedFront = left;
+    //                 adjustedRight = front;
+    //                 adjustedLeft = back;
+    //                 adjustedBack = right;
+    //                 break;
+    //             case 8: // Facing backward
+    //                 adjustedFront = back;
+    //                 adjustedRight = left;
+    //                 adjustedLeft = right;
+    //                 adjustedBack = front;
+    //                 break;
+    //             case 2: // Facing left
+    //                 adjustedFront = right;
+    //                 adjustedRight = back;
+    //                 adjustedLeft = front;
+    //                 adjustedBack = left;
+    //                 break;
+    //             default:
+    //                 throw new IllegalStateException("Unexpected value: " + orientation);
+    //         }
+
+    //         // Update the maze with adjusted walls
+    //         updateMaze(adjustedLeft, adjustedRight, adjustedFront, adjustedBack, currentPosition);
+
+    //         // Recalculate distances with flood fill
+    //         floodFill2();
+    //         for (int i = 0; i < MAZE_SIZE; i++) {
+    //             for (int j = 0; j < MAZE_SIZE; j++) {
+    //                 API.setText(j, MAZE_SIZE-1-i, String.valueOf(distances[i][j]));
+    //             }
+    //         }
+
+    //         for (int i = 0; i < MAZE_SIZE; i++) {
+    //             for (int j = 0; j < MAZE_SIZE; j++) {
+    //                 FloodFill.log1(maze[i][j]);
+    //             }
+    //             FloodFill.log("");
+    //         }
+    //         FloodFill.log("");
+
+
+    //         // Find the next position to move to based on the distances
+    //         int minDistance = Integer.MAX_VALUE;
+    //         Cell nextPosition = null;
+    //         int nextOrientation = orientation;
+
+    //         for (int i = 0; i < 4; i++) {
+    //             int newX = currentPosition.x + directions[i][0];
+    //             int newY = currentPosition.y + directions[i][1];
+
+    //             if (newX >= 0 && newX < MAZE_SIZE && newY >= 0 && newY < MAZE_SIZE) {
+    //                 if (distances[newX][newY] < minDistance && (maze[currentPosition.x][currentPosition.y] & (1 << i)) == 0) {
+    //                     minDistance = distances[newX][newY];
+    //                     nextPosition = new Cell(newX, newY);
+    //                     nextOrientation = 1 << i;  // Update the orientation based on the movement direction
+    //                 }
+    //             }
+    //         }
+
+    //         // If nextPosition is null, it means the robot is stuck
+    //         if (nextPosition == null) {
+    //             System.out.println("Robot is stuck!");
+    //             return 4;
+    //         }
+
+    //         // Move to the next position
+    //         moveToNextPosition(orientation, nextOrientation);
+    //         currentPosition.x = nextPosition.x;
+    //         currentPosition.y = nextPosition.y;
+    //         orientation = nextOrientation;
+
+    //         // Check if the current position is a target cell
+            
+    //         if (currentPosition.x == 15 && currentPosition.y == 0) {
+    //             System.out.println("Robot has reached a target cell!");
+    //             return orientation;
+    //         }
+            
+
+    //     }
+    // }
 }
