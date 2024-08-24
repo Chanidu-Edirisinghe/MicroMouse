@@ -11,20 +11,20 @@ int enB = 6;
 int in3 = 7;
 int in4 = 8;
 
-float kp = 34.0;  // Proportional gain
-float kd = 6.0;   // Derivative gain
+float kp = 20.0;  // Proportional gain
+float kd = 1.0;   // Derivative gain
 float ki = 0.0;   // Integral gain
 
 float ePreviousRight = 0, ePreviousLeft = 0;
 float eIntegralRight = 0, eIntegralLeft = 0;
 long previousTime = 0;
-float targetDistance = 4.0;
+float targetDistance = 4.5;
 
 const int MAZE_SIZE = 8;
 int maze[MAZE_SIZE][MAZE_SIZE] = { 0 };  // 2D array to represent walls
 int distances[MAZE_SIZE][MAZE_SIZE];     // 2D array to store distances
 
-int currentX = 7;
+int currentX = MAZE_SIZE-1;
 int currentY = 0;
 int currentOrientation = 4;
 
@@ -34,9 +34,11 @@ struct Cell {
 
 Cell start = { currentX, currentY };
 
+int n = MAZE_SIZE / 2;
 const int targetCells[4][2] = {
-  { 3, 3 }, { 3, 4 }, { 4, 3 }, { 4, 4 }
+  { n - 1, n - 1 }, { n - 1, n }, { n, n - 1 }, { n, n }
 };
+
 
 struct Node {
   Cell data;
@@ -107,28 +109,29 @@ public:
 void moveMotors(float controlSignalRight, float controlSignalLeft) {
   // Adjust right motor
   if (controlSignalRight > 0) {
-    analogWrite(enA, constrain(200 - controlSignalRight, 125, 255));
+    analogWrite(enA, constrain(200 - controlSignalRight, 0, 255));
     digitalWrite(in1, HIGH);
     digitalWrite(in2, LOW);  // Forward motion
   } else {
-    analogWrite(enA, constrain(200 + controlSignalRight, 125, 255));
+    analogWrite(enA, constrain(200 + controlSignalRight, 0, 255));
     digitalWrite(in1, HIGH);
     digitalWrite(in2, LOW);  // Forward motion as well; PWM is reduced to slow down
   }
 
   // Adjust left motor
   if (controlSignalLeft > 0) {
-    analogWrite(enB, constrain(200 - controlSignalLeft, 125, 255));
+    analogWrite(enB, constrain(200 - controlSignalLeft, 0, 255));
     digitalWrite(in3, LOW);
     digitalWrite(in4, HIGH);  // Forward motion
   } else {
-    analogWrite(enB, constrain(200 + controlSignalLeft, 125, 255));
+    analogWrite(enB, constrain(200 + controlSignalLeft, 0, 255));
     digitalWrite(in3, LOW);
     digitalWrite(in4, HIGH);  // Forward motion as well; PWM is reduced to slow down
   }
 }
 
 float pidControl(float targetDistance, float currentDistance, float& ePrevious, float& eIntegral, float deltaT) {
+
   float error = targetDistance - currentDistance;
   eIntegral += error * deltaT;
   float eDerivative = (error - ePrevious) / deltaT;
@@ -173,7 +176,7 @@ void turnLeft() {
 
 void moveForward() {
   long startTime = millis();
-  long moveDuration = 2500;  // 2.5 seconds
+  long moveDuration = 2300;  // 2.5 seconds
   long currentTime;
 
   // Loop until the time limit is reached
@@ -207,7 +210,12 @@ void moveForward() {
         float controlSignalRight = pidControl(targetDistance, distance[0], ePreviousRight, eIntegralRight, deltaT);
         // PID control for left motor
         float controlSignalLeft = pidControl(targetDistance, distance[1], ePreviousLeft, eIntegralLeft, deltaT);
-
+        // if(!wallLeft() && wallRight()){
+        //   controlSignalLeft = controlSignalRight;
+        // }
+        // if(wallLeft() && !wallRight()){
+        //   controlSignalRight = controlSignalLeft;
+        // }
         // Adjust motor speeds based on control signals
         moveMotors(controlSignalRight, controlSignalLeft);
       }
