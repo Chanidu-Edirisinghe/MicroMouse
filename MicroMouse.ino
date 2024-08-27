@@ -11,16 +11,16 @@ int enB = 6;
 int in3 = 7;
 int in4 = 8;
 
-float kp = 20.0;  // Proportional gain
-float kd = 1.0;   // Derivative gain
-float ki = 0.0;   // Integral gain
+//float kp = 33;  // Proportional gain
+float kd = 0;   // Derivative gain
+float ki = 0;   // Integral gain
 
 float ePreviousRight = 0, ePreviousLeft = 0;
 float eIntegralRight = 0, eIntegralLeft = 0;
 long previousTime = 0;
-float targetDistance = 4.5;
+float targetDistance = 5;
 
-const int MAZE_SIZE = 8;
+const int MAZE_SIZE = 16;
 int maze[MAZE_SIZE][MAZE_SIZE] = { 0 };  // 2D array to represent walls
 int distances[MAZE_SIZE][MAZE_SIZE];     // 2D array to store distances
 
@@ -106,31 +106,73 @@ public:
   }
 };
 
+void moveMotorsLeft(float controlSignal){
+  if(controlSignal > targetDistance){
+    analogWrite(enA, 200);
+    analogWrite(enB, 120);
+    digitalWrite(in1, HIGH);
+    digitalWrite(in2, LOW); 
+    digitalWrite(in3, LOW);
+    digitalWrite(in4, HIGH); 
+    
+  }
+  else{
+    analogWrite(enA, 120);
+    analogWrite(enB, 200);
+    digitalWrite(in1, HIGH);
+    digitalWrite(in2, LOW); 
+    digitalWrite(in3, LOW);
+    digitalWrite(in4, HIGH);
+    
+  }
+}
+
+void moveMotorsRight(float controlSignal){
+  if(controlSignal > targetDistance){
+    analogWrite(enA, 120);
+    analogWrite(enB, 200);
+    digitalWrite(in1, HIGH);
+    digitalWrite(in2, LOW); 
+    digitalWrite(in3, LOW);
+    digitalWrite(in4, HIGH); 
+    
+  }
+  else{
+    analogWrite(enA, 200);
+    analogWrite(enB, 120);
+    digitalWrite(in1, HIGH);
+    digitalWrite(in2, LOW); 
+    digitalWrite(in3, LOW);
+    digitalWrite(in4, HIGH);
+    
+  }
+}
+
 void moveMotors(float controlSignalRight, float controlSignalLeft) {
   // Adjust right motor
   if (controlSignalRight > 0) {
-    analogWrite(enA, constrain(200 - controlSignalRight, 0, 255));
+    analogWrite(enA, constrain(180 - controlSignalRight, 100, 255));
     digitalWrite(in1, HIGH);
     digitalWrite(in2, LOW);  // Forward motion
   } else {
-    analogWrite(enA, constrain(200 + controlSignalRight, 0, 255));
+    analogWrite(enA, constrain(180 + controlSignalRight, 100, 255));
     digitalWrite(in1, HIGH);
     digitalWrite(in2, LOW);  // Forward motion as well; PWM is reduced to slow down
   }
 
   // Adjust left motor
   if (controlSignalLeft > 0) {
-    analogWrite(enB, constrain(200 - controlSignalLeft, 0, 255));
+    analogWrite(enB, constrain(180 - controlSignalLeft, 100, 255));
     digitalWrite(in3, LOW);
     digitalWrite(in4, HIGH);  // Forward motion
   } else {
-    analogWrite(enB, constrain(200 + controlSignalLeft, 0, 255));
+    analogWrite(enB, constrain(180 + controlSignalLeft, 100, 255));
     digitalWrite(in3, LOW);
     digitalWrite(in4, HIGH);  // Forward motion as well; PWM is reduced to slow down
   }
 }
 
-float pidControl(float targetDistance, float currentDistance, float& ePrevious, float& eIntegral, float deltaT) {
+float pidControl(float targetDistance, float currentDistance, float& ePrevious, float& eIntegral, float deltaT, int kp) {
 
   float error = targetDistance - currentDistance;
   eIntegral += error * deltaT;
@@ -159,8 +201,9 @@ void turnRight() {
   digitalWrite(in2, HIGH);
   digitalWrite(in3, LOW);
   digitalWrite(in4, HIGH);
-  delay(950);
+  delay(965);
   stop();
+  delay(100);
 }
 
 void turnLeft() {
@@ -170,13 +213,14 @@ void turnLeft() {
   digitalWrite(in2, LOW);
   digitalWrite(in3, HIGH);
   digitalWrite(in4, LOW);
-  delay(950);
+  delay(965);
   stop();
+  delay(100);
 }
 
 void moveForward() {
   long startTime = millis();
-  long moveDuration = 2300;  // 2.5 seconds
+  long moveDuration = 2400;  // 2.5 seconds
   long currentTime;
 
   // Loop until the time limit is reached
@@ -191,7 +235,7 @@ void moveForward() {
 
     // Check if the time limit has not been reached
     if (currentTime - startTime < moveDuration) {
-      if (distance[2] < 5) {
+      if (distance[2] < 5.5) {
         // Front wall detected, stop the robot
         analogWrite(enA, 255);
         analogWrite(enB, 255);
@@ -199,30 +243,49 @@ void moveForward() {
         digitalWrite(in2, LOW);
         digitalWrite(in3, LOW);
         digitalWrite(in4, HIGH);
-        delay(200);
+        delay(500);
         stop();
         return;  // Exit the function if a wall is detected
-      } else {
+      } 
+      else {
         float deltaT = ((float)(currentTime - previousTime)) / 1000.0;
         previousTime = currentTime;
 
-        // PID control for right motor
-        float controlSignalRight = pidControl(targetDistance, distance[0], ePreviousRight, eIntegralRight, deltaT);
-        // PID control for left motor
-        float controlSignalLeft = pidControl(targetDistance, distance[1], ePreviousLeft, eIntegralLeft, deltaT);
-        // if(!wallLeft() && wallRight()){
-        //   controlSignalLeft = controlSignalRight;
-        // }
-        // if(wallLeft() && !wallRight()){
-        //   controlSignalRight = controlSignalLeft;
-        // }
-        // Adjust motor speeds based on control signals
-        moveMotors(controlSignalRight, controlSignalLeft);
+        float controlSignalRight;
+        float controlSignalLeft;
+        Serial.println(distance[0]);
+        Serial.println(distance[1]);
+        Serial.println(distance[2]);
+        if(!wallLeft() && wallRight()){
+          //controlSignalRight = pidControl(4, distance[0], ePreviousRight, eIntegralRight, deltaT, 40);
+          moveMotorsRight(distance[0]);
+          Serial.print("Motor moves right");
+        }
+        else if(wallLeft() && !wallRight()){
+          //controlSignalLeft = pidControl(4, distance[1], ePreviousLeft, eIntegralLeft, deltaT, 40);
+          moveMotorsLeft(distance[1]);
+          Serial.print("Motor moves left");
+        }
+        else if(!wallLeft() && !wallRight()){
+          analogWrite(enA, 160);
+          analogWrite(enB, 160);
+          digitalWrite(in1, HIGH);
+          digitalWrite(in2, LOW); 
+          digitalWrite(in3, LOW);
+          digitalWrite(in4, HIGH); 
+          Serial.print("Motor moves front");
+        }
+        else{
+          controlSignalRight = pidControl(targetDistance, distance[0], ePreviousRight, eIntegralRight, deltaT,33);
+          controlSignalLeft = pidControl(targetDistance, distance[1], ePreviousLeft, eIntegralLeft, deltaT, 33);
+          moveMotors(controlSignalRight, controlSignalLeft);
+          Serial.print("Motor moves two walls");
+        }
+       
       }
     } else {
-      // Stop the robot after the time limit has been reached
       stop();
-      return;  // Exit the function after the time limit is reached
+      return;  
     }
   }
 }
@@ -236,7 +299,7 @@ bool wallFront() {
 }
 
 bool wallRight() {
-  if (distance[0] > 14) {
+  if (distance[0] > 8) {
     return false;
   } else {
     return true;
@@ -244,7 +307,7 @@ bool wallRight() {
 }
 
 bool wallLeft() {
-  if (distance[1] > 14) {
+  if (distance[1] > 8) {
     return false;
   } else {
     return true;
@@ -541,6 +604,7 @@ void setup() {
   pinMode(in3, OUTPUT);
   pinMode(in4, OUTPUT);
 
+  delay(5000);
   floodFill();
   navigate(start, currentOrientation);
   
